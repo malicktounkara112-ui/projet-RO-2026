@@ -1,0 +1,434 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================================================
+%  PACKAGES
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{float}
+
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+
+% ============================================================
+%  COULEURS
+% ============================================================
+\definecolor{bleuLIU}{RGB}{0, 51, 102}
+\definecolor{grisLeger}{RGB}{245, 245, 245}
+\definecolor{vertCode}{RGB}{0, 128, 0}
+\definecolor{rougeCode}{RGB}{180, 0, 0}
+
+% ============================================================
+%  STYLE DES SECTIONS
+% ============================================================
+\titleformat{\section}
+  {\large\bfseries\color{bleuLIU}}
+  {\thesection.}{0.5em}{}[\titlerule]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{bleuLIU}}
+  {\thesubsection.}{0.5em}{}
+
+% ============================================================
+%  EN-TÊTE ET PIED DE PAGE
+% ============================================================
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{bleuLIU}{\small Recherche Opérationnelle — 2025/2026}}
+\lhead{\textcolor{bleuLIU}{\small Méthode du Simplexe}}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ============================================================
+%  STYLE DU CODE PYTHON
+% ============================================================
+\lstset{
+  language=Python,
+  backgroundcolor=\color{grisLeger},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{bleuLIU}\bfseries,
+  commentstyle=\color{vertCode}\itshape,
+  stringstyle=\color{rougeCode},
+  frame=single,
+  rulecolor=\color{bleuLIU},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4
+}
+
+% ============================================================
+%  PAGE DE TITRE
+% ============================================================
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{1cm}
+
+  {\Large \textbf{Université Libanaise Internationale en Mauritanie}}\\[0.3cm]
+  {\large Faculté des Sciences}\\[0.1cm]
+  {\large Module : Recherche Opérationnelle — Licence}\\[0.1cm]
+  {\large Responsable : Dr. EL BENANY Med Mahmoud}
+
+  \vspace{1.5cm}
+  \rule{\textwidth}{1.5pt}\\[0.4cm]
+  {\LARGE \textbf{\textcolor{bleuLIU}{Rapport de Projet}}}\\[0.3cm]
+  {\huge \textbf{Méthode du Simplexe}}\\[0.3cm]
+  {\large Sujet 1.4 — Sujets classiques et fondamentaux}\\[0.2cm]
+  \rule{\textwidth}{1.5pt}
+
+  \vspace{1.5cm}
+
+  \begin{tabular}{rl}
+    \textbf{Étudiant :}   & \textit{[Votre Nom Complet]} \\[0.3cm]
+    \textbf{Filière :}    & Licence Informatique / Mathématiques \\[0.3cm]
+    \textbf{Année :}      & 3\textsuperscript{ème} année \\[0.3cm]
+    \textbf{Année univ. :}& 2025 -- 2026 \\
+  \end{tabular}
+
+  \vfill
+  {\large Nouakchott, Mai 2026}
+\end{titlepage}
+
+% ============================================================
+%  TABLE DES MATIÈRES
+% ============================================================
+\tableofcontents
+\newpage
+
+% ============================================================
+%  1. INTRODUCTION
+% ============================================================
+\section{Introduction}
+
+La \textbf{programmation linéaire} (PL) est l'une des méthodes les plus 
+fondamentales de la recherche opérationnelle. Elle permet de modéliser 
+des problèmes de décision réels (allocation de ressources, planification, 
+logistique) sous forme d'un programme mathématique avec une fonction 
+objectif linéaire et des contraintes linéaires.
+
+La \textbf{méthode du simplexe}, développée par George Dantzig en 1947, 
+est l'algorithme de référence pour résoudre ces problèmes. Elle explore 
+les sommets du polyèdre des solutions réalisables de façon itérative 
+jusqu'à atteindre l'optimum global.
+
+\medskip
+Ce rapport présente :
+\begin{itemize}[noitemsep]
+  \item la formulation mathématique du problème,
+  \item la mise en forme standard,
+  \item la résolution manuelle étape par étape,
+  \item l'implémentation en Python avec la bibliothèque \texttt{PuLP},
+  \item l'analyse de la solution optimale et la notion de dualité.
+\end{itemize}
+
+% ============================================================
+%  2. FORMULATION MATHÉMATIQUE
+% ============================================================
+\section{Formulation mathématique}
+
+\subsection{Problème original}
+
+Nous considérons le problème de programmation linéaire suivant :
+
+\[
+  \max \; z = 3x + 4y
+\]
+\[
+  \text{sous les contraintes :} \quad
+  \begin{cases}
+    x + 2y \leq 8 \\
+    3x + y  \leq 9 \\
+    x, y \geq 0
+  \end{cases}
+\]
+
+\textbf{Interprétation économique :} On cherche à maximiser un profit $z$ 
+en choisissant les quantités $x$ et $y$ de deux produits, sous des 
+contraintes de disponibilité de ressources (heures-machines, matières 
+premières, etc.).
+
+\subsection{Mise en forme standard}
+
+Pour appliquer le simplexe, on transforme les inégalités en égalités en 
+ajoutant des \textbf{variables d'écart} $s_1, s_2 \geq 0$ :
+
+\[
+  \max \; z = 3x + 4y + 0s_1 + 0s_2
+\]
+\[
+  \begin{cases}
+    x + 2y + s_1 \phantom{+ s_2} = 8 \\
+    3x + y \phantom{+ s_1} + s_2 = 9 \\
+    x, y, s_1, s_2 \geq 0
+  \end{cases}
+\]
+
+La \textbf{solution de base initiale} (SBI) est obtenue en posant $x = y = 0$ :
+\[
+  s_1 = 8, \quad s_2 = 9, \quad z = 0
+\]
+
+% ============================================================
+%  3. RÉSOLUTION MANUELLE
+% ============================================================
+\section{Résolution manuelle par le simplexe}
+
+\subsection{Tableau initial}
+
+Le tableau simplex initial est construit à partir de la forme standard. 
+La ligne $z$ représente $z - 3x - 4y = 0$, donc les coefficients de la 
+fonction objectif apparaissent avec un signe négatif :
+
+\begin{table}[H]
+\centering
+\caption{Tableau simplex — Itération 0 (initial)}
+\begin{tabular}{c|cccc|c}
+\toprule
+\textbf{VB} & $x$ & $y$ & $s_1$ & $s_2$ & \textbf{RHS} \\
+\midrule
+$s_1$ & 1 & \textbf{2} & 1 & 0 & 8 \\
+$s_2$ & 3 & 1 & 0 & 1 & 9 \\
+\midrule
+$z$   & $-3$ & $-4$ & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Choix de la variable entrante :} Le coefficient le plus négatif 
+dans la ligne $z$ est $-4$ (colonne $y$) $\Rightarrow$ \textbf{variable 
+entrante : $y$} (colonne pivot).
+
+\textbf{Choix de la variable sortante (test du rapport minimum) :}
+\[
+  \min\left\{\frac{8}{2},\; \frac{9}{1}\right\} = \min\{4,\; 9\} = 4 
+  \Rightarrow \text{ligne } s_1 \Rightarrow \textbf{variable sortante : } s_1
+\]
+\textbf{Élément pivot : } $a_{11} = 2$ (ligne $s_1$, colonne $y$).
+
+\subsection{Itération 1}
+
+On divise la ligne pivot ($s_1$) par l'élément pivot (2), puis on 
+élimine $y$ des autres lignes par combinaisons linéaires :
+
+\begin{table}[H]
+\centering
+\caption{Tableau simplex — Itération 1}
+\begin{tabular}{c|cccc|c}
+\toprule
+\textbf{VB} & $x$ & $y$ & $s_1$ & $s_2$ & \textbf{RHS} \\
+\midrule
+$y$   & $\frac{1}{2}$ & 1 & $\frac{1}{2}$ & 0 & 4 \\
+$s_2$ & \textbf{$\frac{5}{2}$} & 0 & $-\frac{1}{2}$ & 1 & 5 \\
+\midrule
+$z$   & $-1$ & 0 & $2$ & 0 & 16 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Variable entrante :} coefficient $-1$ (colonne $x$) $\Rightarrow$ 
+\textbf{variable entrante : $x$}.
+
+\textbf{Test du rapport minimum :}
+\[
+  \min\left\{\frac{4}{1/2},\; \frac{5}{5/2}\right\} = \min\{8,\; 2\} = 2
+  \Rightarrow \text{ligne } s_2 \Rightarrow \textbf{variable sortante : } s_2
+\]
+\textbf{Élément pivot : } $\frac{5}{2}$ (ligne $s_2$, colonne $x$).
+
+\subsection{Itération 2 — Solution optimale}
+
+On divise la ligne pivot par $\frac{5}{2}$, puis on élimine $x$ :
+
+\begin{table}[H]
+\centering
+\caption{Tableau simplex — Itération 2 (optimal)}
+\begin{tabular}{c|cccc|c}
+\toprule
+\textbf{VB} & $x$ & $y$ & $s_1$ & $s_2$ & \textbf{RHS} \\
+\midrule
+$y$ & 0 & 1 & $\frac{2}{5}$ & $-\frac{1}{5}$ & 3 \\
+$x$ & 1 & 0 & $-\frac{1}{5}$ & $\frac{2}{5}$ & 2 \\
+\midrule
+$z$ & 0 & 0 & $\frac{9}{5}$ & $\frac{2}{5}$ & \textbf{18} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tous les coefficients de la ligne $z$ sont $\geq 0$ : 
+\textbf{la solution est optimale}.
+
+\[
+  \boxed{x^* = 2, \quad y^* = 3, \quad z^* = 18}
+\]
+
+\textbf{Vérification :}
+\[
+  x + 2y = 2 + 6 = 8 \leq 8 \;\checkmark \qquad 
+  3x + y = 6 + 3 = 9 \leq 9 \;\checkmark
+\]
+
+% ============================================================
+%  4. IMPLÉMENTATION PYTHON
+% ============================================================
+\section{Implémentation Python avec PuLP}
+
+\subsection{Code source}
+
+\begin{lstlisting}[caption={Résolution du problème par PuLP}]
+from pulp import *
+
+# Création du problème
+prob = LpProblem("Simplexe_1_4", LpMaximize)
+
+# Variables de décision
+x = LpVariable("x", lowBound=0)
+y = LpVariable("y", lowBound=0)
+
+# Fonction objectif
+prob += 3*x + 4*y, "Profit"
+
+# Contraintes
+prob += x + 2*y <= 8, "Contrainte_1"
+prob += 3*x + y  <= 9, "Contrainte_2"
+
+# Résolution
+prob.solve(PULP_CBC_CMD(msg=0))
+
+# Affichage des résultats
+print("=== SOLUTION OPTIMALE ===")
+print(f"Statut     : {LpStatus[prob.status]}")
+print(f"x*         : {value(x)}")
+print(f"y*         : {value(y)}")
+print(f"z* (profit): {value(prob.objective)}")
+
+print("\n=== PRIX FANTOMES (Dualite) ===")
+for name, c in prob.constraints.items():
+    print(f"{name} : shadow price = {c.pi:.4f}")
+\end{lstlisting}
+
+\subsection{Résultats}
+
+\begin{table}[H]
+\centering
+\caption{Résultats de la résolution Python}
+\begin{tabular}{lc}
+\toprule
+\textbf{Variable / Indicateur} & \textbf{Valeur} \\
+\midrule
+Statut & Optimal \\
+$x^*$ & 2.0 \\
+$y^*$ & 3.0 \\
+$z^*$ & 18.0 \\
+Prix fantôme — Contrainte 1 & 1.8 \\
+Prix fantôme — Contrainte 2 & 0.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Les résultats Python confirment exactement la résolution manuelle.
+
+% ============================================================
+%  5. ANALYSE ET DUALITÉ
+% ============================================================
+\section{Analyse de la solution et dualité}
+
+\subsection{Interprétation de la solution optimale}
+
+La solution optimale $x^* = 2$, $y^* = 3$ signifie qu'il faut 
+produire \textbf{2 unités} du produit $x$ et \textbf{3 unités} du 
+produit $y$ pour maximiser le profit à \textbf{18 unités monétaires}.
+
+On remarque que :
+\begin{itemize}[noitemsep]
+  \item La contrainte 1 est \textbf{saturée} ($x + 2y = 8$) : 
+  la ressource 1 est entièrement utilisée.
+  \item La contrainte 2 est \textbf{saturée} ($3x + y = 9$) : 
+  la ressource 2 est entièrement utilisée.
+\end{itemize}
+
+Les deux variables d'écart valent $s_1 = s_2 = 0$ : il n'y a 
+\textbf{aucune ressource inutilisée} à l'optimum.
+
+\subsection{Prix fantômes (Variables duales)}
+
+Les \textbf{prix fantômes} (shadow prices) mesurent l'amélioration 
+marginale du profit optimal si l'on augmente d'une unité le 
+membre droit d'une contrainte.
+
+\begin{table}[H]
+\centering
+\caption{Prix fantômes et interprétation}
+\begin{tabular}{clcc}
+\toprule
+\textbf{Contrainte} & \textbf{Description} & \textbf{Prix fantôme} & \textbf{Impact} \\
+\midrule
+$x + 2y \leq 8$ & Ressource 1 & $y_1^* = \dfrac{9}{5} = 1{,}8$ 
+  & $+1$ unité $\Rightarrow z^* = 19{,}8$ \\[8pt]
+$3x + y \leq 9$  & Ressource 2 & $y_2^* = \dfrac{2}{5} = 0{,}4$ 
+  & $+1$ unité $\Rightarrow z^* = 18{,}4$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Conclusion managériale :} Si on devait investir pour augmenter 
+une seule ressource, il vaut mieux augmenter la \textbf{ressource 1} 
+(prix fantôme $= 1{,}8 > 0{,}4$) car elle génère un gain plus important.
+
+\subsection{Problème dual}
+
+Le problème dual associé est :
+
+\[
+  \min \; w = 8y_1 + 9y_2
+\]
+\[
+  \begin{cases}
+    y_1 + 3y_2 \geq 3 \\
+    2y_1 + y_2 \geq 4 \\
+    y_1, y_2 \geq 0
+  \end{cases}
+\]
+
+Par le \textbf{théorème des écarts complémentaires}, la solution duale 
+optimale est $y_1^* = \frac{9}{5}$ et $y_2^* = \frac{2}{5}$, 
+avec $w^* = 8 \times \frac{9}{5} + 9 \times \frac{2}{5} = 18 = z^*$.
+
+Ce résultat confirme le \textbf{théorème de dualité forte} : 
+les valeurs optimales des problèmes primal et dual sont égales.
+
+% ============================================================
+%  6. CONCLUSION
+% ============================================================
+\section{Conclusion}
+
+Ce projet a permis de maîtriser la méthode du simplexe dans ses deux 
+dimensions : théorique et pratique.
+
+Sur le plan \textbf{théorique}, nous avons vu comment formuler un 
+problème de PL en forme standard, appliquer les itérations du simplexe 
+et interpréter la solution à travers la dualité et les prix fantômes.
+
+Sur le plan \textbf{pratique}, l'implémentation Python avec 
+\texttt{PuLP} confirme les résultats manuels et ouvre la voie à la 
+résolution de problèmes de plus grande dimension inaccessibles 
+manuellement.
+
+La méthode du simplexe constitue un socle essentiel pour aborder 
+des méthodes plus avancées comme le \textit{branch-and-bound} 
+(pour les variables entières) ou les algorithmes de points intérieurs.
+
+\end{document}
